@@ -1,0 +1,497 @@
+<html><head></head><body><div id="app"></div>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#app{font-family:var(--font-sans);padding:1rem 0;max-width:100%}
+.screen{display:none}.screen.active{display:block}
+
+/* NAV */
+.nav{display:flex;gap:4px;margin-bottom:16px;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:4px}
+.nav-btn{flex:1;padding:7px 4px;font-size:12px;font-weight:500;border:none;background:transparent;color:var(--color-text-secondary);border-radius:var(--border-radius-md);cursor:pointer;transition:all .15s}
+.nav-btn.active{background:var(--color-background-primary);color:var(--color-text-primary);border:0.5px solid var(--color-border-secondary)}
+
+/* TODAY */
+.today-header{margin-bottom:14px}
+.today-date{font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.today-title{font-size:20px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.today-subtitle{font-size:13px;color:var(--color-text-secondary)}
+.type-pill{display:inline-block;font-size:11px;font-weight:500;padding:2px 10px;border-radius:20px;margin-bottom:12px}
+.type-skill{background:#E6F1FB;color:#0C447C}.type-board{background:#E1F5EE;color:#085041}.type-volume{background:#EEEDFE;color:#3C3489}.type-rest{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+@media(prefers-color-scheme:dark){.type-skill{background:#0C447C;color:#B5D4F4}.type-board{background:#085041;color:#9FE1CB}.type-volume{background:#3C3489;color:#CECBF6}}
+
+.session-blocks{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.sblock{border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);overflow:hidden}
+.sblock-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--color-background-secondary);cursor:pointer;user-select:none}
+.sblock-title{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.sblock-time{font-size:11px;color:var(--color-text-tertiary)}
+.sblock-body{padding:10px 12px;display:none;border-top:0.5px solid var(--color-border-tertiary)}
+.sblock-body.open{display:block}
+.drill{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.drill:last-child{border-bottom:none}
+.drill-check{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--color-border-secondary);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;background:var(--color-background-primary);transition:all .1s}
+.drill-check.done{background:#1D9E75;border-color:#1D9E75}
+.drill-check.done::after{content:'';display:block;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px)}
+.drill-text{font-size:12px;color:var(--color-text-secondary);line-height:1.5;flex:1}
+.drill-text strong{color:var(--color-text-primary);font-weight:500}
+
+.log-area{margin-top:12px}
+.log-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.log-input{width:100%;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-size:12px;font-family:var(--font-sans);padding:8px 10px;resize:none;line-height:1.5}
+.log-input:focus{outline:none;border-color:var(--color-border-primary)}
+.complete-btn{margin-top:12px;width:100%;padding:11px;border-radius:var(--border-radius-md);border:none;background:#1D9E75;color:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
+.complete-btn:hover{background:#0F6E56}
+.complete-btn:disabled{background:var(--color-background-secondary);color:var(--color-text-tertiary);cursor:default}
+
+/* SCHEDULE */
+.phase-header{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-tertiary);padding:8px 0 6px;margin-top:4px}
+.week-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.week-label{font-size:11px;color:var(--color-text-tertiary);width:44px;flex-shrink:0}
+.day-dots{display:flex;gap:4px;flex:1}
+.dot{width:36px;height:36px;border-radius:var(--border-radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:500;cursor:pointer;border:0.5px solid transparent;transition:all .15s;flex-shrink:0}
+.dot-label{font-size:8px;color:inherit;opacity:.8;margin-top:1px}
+.dot.skill{background:#E6F1FB;color:#185FA5;border-color:#B5D4F4}
+.dot.board{background:#E1F5EE;color:#0F6E56;border-color:#9FE1CB}
+.dot.volume{background:#EEEDFE;color:#534AB7;border-color:#CECBF6}
+.dot.rest{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+.dot.deload{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.dot.today-dot{box-shadow:0 0 0 2px #1D9E75}
+.dot.done-dot{opacity:.45}
+.dot.done-dot::after{content:'✓';position:absolute;font-size:10px}
+.dot{position:relative}
+@media(prefers-color-scheme:dark){.dot.skill{background:#0C447C;color:#85B7EB;border-color:#185FA5}.dot.board{background:#085041;color:#5DCAA5;border-color:#0F6E56}.dot.volume{background:#3C3489;color:#AFA9EC;border-color:#534AB7}.dot.deload{background:#633806;color:#FAC775;border-color:#854F0B}}
+
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--color-text-secondary)}
+.leg-dot{width:10px;height:10px;border-radius:3px}
+
+/* LOG HISTORY */
+.log-entry{border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:10px 12px;margin-bottom:8px;background:var(--color-background-secondary)}
+.log-entry-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.log-entry-date{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.log-entry-type{font-size:10px;color:var(--color-text-tertiary)}
+.log-entry-note{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.empty-state{text-align:center;padding:32px 16px;color:var(--color-text-tertiary);font-size:13px}
+
+/* HANGBOARD */
+.hb-phase{border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);padding:12px 14px;margin-bottom:10px}
+.hb-phase-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.hb-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.hb-row:last-child{border-bottom:none}
+.hb-key{font-size:11px;color:var(--color-text-secondary)}
+.hb-val{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.timer-area{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:16px;text-align:center;margin-top:12px}
+.timer-display{font-size:40px;font-weight:500;color:var(--color-text-primary);font-family:var(--font-mono);margin-bottom:12px}
+.timer-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:12px}
+.timer-btns{display:flex;gap:8px;justify-content:center}
+.tbtn{padding:8px 20px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;font-weight:500;cursor:pointer}
+.tbtn.primary{background:#1D9E75;border-color:#1D9E75;color:#fff}
+.tbtn.danger{background:#E24B4A;border-color:#E24B4A;color:#fff}
+.set-tracker{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.set-dot{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--color-border-secondary);background:var(--color-background-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--color-text-tertiary);transition:all .15s}
+.set-dot.active{background:#1D9E75;border-color:#1D9E75;color:#fff}
+</style>
+
+<div id="app">
+<div class="nav">
+  <button class="nav-btn active" onclick="showScreen('today')">Today</button>
+  <button class="nav-btn" onclick="showScreen('schedule')">Schedule</button>
+  <button class="nav-btn" onclick="showScreen('hangboard')">Hangboard</button>
+  <button class="nav-btn" onclick="showScreen('history')">Log</button>
+</div>
+
+<!-- TODAY -->
+<div class="screen active" id="screen-today">
+  <div class="today-header">
+    <div class="today-date" id="today-date">Wednesday, March 25</div>
+    <div class="today-title" id="today-title">Skill wall</div>
+    <div class="today-subtitle" id="today-sub">Positioning &amp; movement quality</div>
+  </div>
+  <div id="today-type-pill"><span class="type-pill type-skill">Skill</span></div>
+  <div class="session-blocks" id="session-blocks"><div class="sblock"><div class="sblock-header" onclick="toggleBlock(this)"><span class="sblock-title">Warm-up (0–15 min)</span><span class="sblock-time">▾</span></div><div class="sblock-body open"><div class="drill"><div class="drill-check" onclick="toggleCheck('0-0-0',this)"></div><div class="drill-text">Juggy V1–V2 laps. Climb deliberately slow — treat each move like a drill.</div></div><div class="drill"><div class="drill-check" onclick="toggleCheck('0-0-1',this)"></div><div class="drill-text">Shoulder CARs: 10 circles each arm. Wrist figure-8s.</div></div></div></div><div class="sblock"><div class="sblock-header" onclick="toggleBlock(this)"><span class="sblock-title">Positioning drill: hip-to-wall (15–45 min)</span><span class="sblock-time">▸</span></div><div class="sblock-body"><div class="drill"><div class="drill-check" onclick="toggleCheck('0-1-0',this)"></div><div class="drill-text"><strong>The cue:</strong> Before each reach, your hip on the reaching side should already be flagged or twisted toward the wall. Not after you're stuck — before.</div></div><div class="drill"><div class="drill-check" onclick="toggleCheck('0-1-1',this)"></div><div class="drill-text">Pick 6 problems V3–V4. On each one, pause at every hold and consciously flag or twist before pulling. Climb slow enough that you can narrate it.</div></div><div class="drill"><div class="drill-check" onclick="toggleCheck('0-1-2',this)"></div><div class="drill-text">If a move feels hard, ask: are my hips square to the wall? If yes, that's the problem. Twist in.</div></div></div></div><div class="sblock"><div class="sblock-header" onclick="toggleBlock(this)"><span class="sblock-title">3-point rule (45–70 min)</span><span class="sblock-time">▸</span></div><div class="sblock-body"><div class="drill"><div class="drill-check" onclick="toggleCheck('0-2-0',this)"></div><div class="drill-text">One limb moves at a time. Other 3 must be stable and intentional before you move.</div></div><div class="drill"><div class="drill-check" onclick="toggleCheck('0-2-1',this)"></div><div class="drill-text">Pick 4 problems. If you barn-door or cut feet — restart from the previous hold, no penalty, just redo.</div></div><div class="drill"><div class="drill-check" onclick="toggleCheck('0-2-2',this)"></div><div class="drill-text">Goal is controlled movement, not speed.</div></div></div></div><div class="sblock"><div class="sblock-header" onclick="toggleBlock(this)"><span class="sblock-title">Free climb (70–90 min)</span><span class="sblock-time">▸</span></div><div class="sblock-body"><div class="drill"><div class="drill-check" onclick="toggleCheck('0-3-0',this)"></div><div class="drill-text">V4–V5 free climbing. Try to apply the hip-in habit without thinking about it.</div></div><div class="drill"><div class="drill-check" onclick="toggleCheck('0-3-1',this)"></div><div class="drill-text">Note any problem where you had to consciously correct your positioning.</div></div></div></div></div>
+  <div class="log-area">
+    <div class="log-label">Session notes</div>
+    <textarea class="log-input" id="session-notes" rows="3" placeholder="Problems attempted, what clicked, what didn't..."></textarea>
+    <button class="complete-btn" id="complete-btn" onclick="completeSession()">Mark session complete</button>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="screen" id="screen-schedule">
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>Skill wall</div>
+    <div class="leg"><div class="leg-dot" style="background:#1D9E75"></div>Board + hang</div>
+    <div class="leg"><div class="leg-dot" style="background:#7F77DD"></div>Volume</div>
+    <div class="leg"><div class="leg-dot" style="background:#EF9F27"></div>Deload</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--color-border-secondary)"></div>Rest</div>
+  </div>
+  <div id="schedule-grid"><div class="phase-header">Phase 1 — Foundation</div><div class="week-row"><div class="week-label">W1</div><div class="day-dots"><div class="dot skill today-dot" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W2</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W3</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W4 ↓</div><div class="day-dots"><div class="dot deload" title="Deload week"><span>M</span></div><div class="dot deload" title="Deload week"><span>T</span></div><div class="dot deload" title="Deload week"><span>W</span></div><div class="dot deload" title="Deload week"><span>T</span></div><div class="dot deload" title="Deload week"><span>F</span></div><div class="dot deload" title="Deload week"><span>S</span></div><div class="dot deload" title="Deload week"><span>S</span></div></div></div><div class="phase-header">Phase 2 — Loading</div><div class="week-row"><div class="week-label">W5</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W6</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W7</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W8 ↓</div><div class="day-dots"><div class="dot deload" title="Deload week"><span>M</span></div><div class="dot deload" title="Deload week"><span>T</span></div><div class="dot deload" title="Deload week"><span>W</span></div><div class="dot deload" title="Deload week"><span>T</span></div><div class="dot deload" title="Deload week"><span>F</span></div><div class="dot deload" title="Deload week"><span>S</span></div><div class="dot deload" title="Deload week"><span>S</span></div></div></div><div class="phase-header">Phase 3 — Project</div><div class="week-row"><div class="week-label">W9</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W10</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W11</div><div class="day-dots"><div class="dot skill" title="Skill wall"><span>M</span></div><div class="dot board" title="Board + hangboard"><span>T</span></div><div class="dot rest" title="Rest"><span>W</span></div><div class="dot volume" title="Wall — volume"><span>T</span></div><div class="dot skill" title="Skill wall"><span>F</span></div><div class="dot board" title="Board day"><span>S</span></div><div class="dot rest" title="Full rest"><span>S</span></div></div></div><div class="week-row"><div class="week-label">W12 ↓</div><div class="day-dots"><div class="dot deload" title="Deload week"><span>M</span></div><div class="dot deload" title="Deload week"><span>T</span></div><div class="dot deload" title="Deload week"><span>W</span></div><div class="dot deload" title="Deload week"><span>T</span></div><div class="dot deload" title="Deload week"><span>F</span></div><div class="dot deload" title="Deload week"><span>S</span></div><div class="dot deload" title="Deload week"><span>S</span></div></div></div></div>
+</div>
+
+<!-- HANGBOARD -->
+<div class="screen" id="screen-hangboard">
+  <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px;line-height:1.6">Half crimp on 20mm edge. Do this <strong style="color:var(--color-text-primary)">before</strong> hard bouldering, on fresh fingers.</div>
+  <div class="hb-phase" id="hb-current"><div class="hb-phase-title">Current protocol — Weeks 1–4</div>
+    <div class="hb-row"><span class="hb-key">Type</span><span class="hb-val">Repeaters</span></div>
+    <div class="hb-row"><span class="hb-key">Edge</span><span class="hb-val">20mm half crimp</span></div>
+    <div class="hb-row"><span class="hb-key">Sets × reps</span><span class="hb-val">3 × 6</span></div>
+    <div class="hb-row"><span class="hb-key">Work / rest</span><span class="hb-val">7s on / 3s off</span></div>
+    <div class="hb-row"><span class="hb-key">Load</span><span class="hb-val">Bodyweight only</span></div></div>
+  <div class="timer-area">
+    <div class="timer-label" id="timer-label">Ready — tap Start to begin hang</div>
+    <div class="timer-display" id="timer-display">0:07</div>
+    <div class="set-tracker" id="set-tracker"><div class="set-dot">1</div><div class="set-dot">2</div><div class="set-dot">3</div></div>
+    <div class="timer-btns" style="margin-top:12px">
+      <button class="tbtn primary" id="timer-start" onclick="startTimer()">Start hang</button>
+      <button class="tbtn" onclick="resetTimer()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+  <div id="history-list"><div class="empty-state">No sessions logged yet.<br>Complete today's session to start your log.</div></div>
+</div>
+</div>
+
+<script>
+const START = new Date(2026,2,25);
+
+const SESSIONS = [
+  {type:'skill',label:'Skill wall',sub:'Positioning & movement quality',color:'skill'},
+  {type:'board',label:'Board + hangboard',sub:'Kilter 4×4 + repeaters',color:'board'},
+  {type:'rest',label:'Rest',sub:'Active recovery ok',color:'rest'},
+  {type:'volume',label:'Wall — volume',sub:'V4–V5 volume + projecting',color:'volume'},
+  {type:'skill',label:'Skill wall',sub:'Slab & technical problems',color:'skill'},
+  {type:'board',label:'Board day',sub:'Long Kilter session',color:'board'},
+  {type:'rest',label:'Full rest',sub:'No climbing today',color:'rest'},
+];
+
+const SESSION_PLANS = {
+  skill:[
+    {t:'Warm-up (0–15 min)',items:[
+      'Juggy V1–V2 laps. Climb deliberately slow — treat each move like a drill.',
+      'Shoulder CARs: 10 circles each arm. Wrist figure-8s.',
+    ]},
+    {t:'Positioning drill: hip-to-wall (15–45 min)',items:[
+      '<strong>The cue:</strong> Before each reach, your hip on the reaching side should already be flagged or twisted toward the wall. Not after you\'re stuck — before.',
+      'Pick 6 problems V3–V4. On each one, pause at every hold and consciously flag or twist before pulling. Climb slow enough that you can narrate it.',
+      'If a move feels hard, ask: are my hips square to the wall? If yes, that\'s the problem. Twist in.',
+    ]},
+    {t:'3-point rule (45–70 min)',items:[
+      'One limb moves at a time. Other 3 must be stable and intentional before you move.',
+      'Pick 4 problems. If you barn-door or cut feet — restart from the previous hold, no penalty, just redo.',
+      'Goal is controlled movement, not speed.',
+    ]},
+    {t:'Free climb (70–90 min)',items:[
+      'V4–V5 free climbing. Try to apply the hip-in habit without thinking about it.',
+      'Note any problem where you had to consciously correct your positioning.',
+    ]},
+  ],
+  board:[
+    {t:'Warm-up (0–20 min)',items:[
+      'Easy Kilter @ 40°: V0–V1 problems, focus on high feet and active hip positioning.',
+      'Gradually up to V2–V3 by end of warm-up.',
+    ]},
+    {t:'Hangboard (20–30 min)',items:[
+      'See Hangboard tab for your current protocol and timer.',
+      '20mm half crimp. Rest 3 min between sets.',
+    ]},
+    {t:'4×4 max effort (30–70 min)',items:[
+      'Pick 4 problems at your absolute limit on the Kilter. These should feel nearly impossible.',
+      '4 attempts on each, full 3 min rest between rounds. 16 attempts total.',
+      'If you top more than 2 problems in a round, go harder next session.',
+    ]},
+    {t:'Project (70–90 min)',items:[
+      'One problem only. Pure attempts. Full rest between each (3–4 min minimum).',
+      'Log the crux: what specific move or position is stopping you?',
+    ]},
+  ],
+  volume:[
+    {t:'Warm-up (0–15 min)',items:[
+      'Easy laps. Light and mobile.',
+    ]},
+    {t:'Volume block (15–60 min)',items:[
+      'V4–V5 volume. Target 15–20 sends this block.',
+      'Flash mentality: read the problem fully, one or two tries, move on.',
+      'Don\'t get sucked into projecting here — this is volume, not max effort.',
+    ]},
+    {t:'V6 projecting (60–90 min)',items:[
+      'Max 3 different V6 problems. Isolate the crux move first — do it in isolation before linking.',
+      'If you\'re not landing the crux move in isolation after 5 tries, it\'s too hard for now. Note it and move on.',
+    ]},
+  ],
+  rest:[
+    {t:'Rest day',items:[
+      'No climbing. Fingers and tendons adapt during rest, not during training.',
+      'Light walk, mobility work, or nothing at all — all valid.',
+    ]},
+  ],
+};
+
+const HB_PHASES = [
+  {weeks:'Weeks 1–4',type:'Repeaters',edge:'20mm half crimp',sets:3,reps:6,work:7,rest:3,load:'Bodyweight only'},
+  {weeks:'Weeks 5–8',type:'Repeaters',edge:'20mm half crimp',sets:4,reps:6,work:7,rest:3,load:'+2.5–5kg'},
+  {weeks:'Weeks 9–11',type:'Max hangs',edge:'20mm half crimp',sets:5,reps:1,work:10,rest:180,load:'Test & add weight'},
+];
+
+let state = {
+  checks:{},
+  logs:{},
+  timerRunning:false,
+  timerInterval:null,
+  timerSeconds:0,
+  timerPhase:'hang',
+  currentSet:0,
+  totalSets:3,
+  completedSets:[],
+};
+
+try{ const s=localStorage.getItem('climbState'); if(s) state=Object.assign(state,JSON.parse(s)); }catch(e){}
+
+function save(){try{localStorage.setItem('climbState',JSON.stringify(state));}catch(e){}}
+
+function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function dayIndex(){ const d=today(); const diff=Math.floor((d-START)/86400000); return diff; }
+function isDeload(wi){ return [3,7,11].includes(wi); }
+function sessionForDay(di){
+  const wi=Math.floor(di/7);
+  const dow=di%7;
+  if(isDeload(wi)) return {type:'deload',label:'Deload week',sub:'Cut volume 40%, no hangboard',color:'deload'};
+  return SESSIONS[dow];
+}
+function hbPhaseForWeek(wi){
+  if(wi<4) return HB_PHASES[0];
+  if(wi<8) return HB_PHASES[1];
+  return HB_PHASES[2];
+}
+
+function formatDate(d){ return d.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'}); }
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='schedule') renderSchedule();
+  if(name==='history') renderHistory();
+  if(name==='hangboard') renderHangboard();
+}
+
+function renderToday(){
+  const di=dayIndex();
+  const d=today();
+  const sess=sessionForDay(di);
+  document.getElementById('today-date').textContent=formatDate(d);
+  document.getElementById('today-title').textContent=sess.label;
+  document.getElementById('today-sub').textContent=sess.sub;
+  const pill=document.getElementById('today-type-pill');
+  pill.innerHTML=`<span class="type-pill type-${sess.color}">${sess.type==='deload'?'Deload week':sess.type.charAt(0).toUpperCase()+sess.type.slice(1)}</span>`;
+
+  const plan=SESSION_PLANS[sess.type]||SESSION_PLANS.rest;
+  const blocksEl=document.getElementById('session-blocks');
+  blocksEl.innerHTML='';
+  plan.forEach((block,bi)=>{
+    const div=document.createElement('div');
+    div.className='sblock';
+    const drills=block.items.map((item,ii)=>{
+      const key=`${di}-${bi}-${ii}`;
+      const done=state.checks[key];
+      return `<div class="drill"><div class="drill-check${done?' done':''}" onclick="toggleCheck('${key}',this)"></div><div class="drill-text">${item}</div></div>`;
+    }).join('');
+    div.innerHTML=`<div class="sblock-header" onclick="toggleBlock(this)"><span class="sblock-title">${block.t}</span><span class="sblock-time">${bi===0?'▾':'▸'}</span></div><div class="sblock-body${bi===0?' open':''}">${drills}</div>`;
+    blocksEl.appendChild(div);
+  });
+
+  const notes=document.getElementById('session-notes');
+  notes.value=state.logs[di]?.notes||'';
+  notes.oninput=()=>{state.logs[di]=state.logs[di]||{};state.logs[di].notes=notes.value;save();};
+
+  const btn=document.getElementById('complete-btn');
+  if(state.logs[di]?.done){
+    btn.textContent='Session complete ✓';
+    btn.disabled=true;
+  }
+}
+
+function toggleBlock(header){
+  const body=header.nextElementSibling;
+  const open=body.classList.toggle('open');
+  header.querySelector('.sblock-time').textContent=open?'▾':'▸';
+}
+function toggleCheck(key,el){
+  state.checks[key]=!state.checks[key];
+  el.classList.toggle('done',state.checks[key]);
+  save();
+}
+function completeSession(){
+  const di=dayIndex();
+  state.logs[di]=state.logs[di]||{};
+  state.logs[di].done=true;
+  state.logs[di].type=sessionForDay(di).label;
+  state.logs[di].date=today().toISOString();
+  save();
+  const btn=document.getElementById('complete-btn');
+  btn.textContent='Session complete ✓';
+  btn.disabled=true;
+}
+
+function renderSchedule(){
+  const di=dayIndex();
+  const el=document.getElementById('schedule-grid');
+  el.innerHTML='';
+  const phases=[{label:'Phase 1 — Foundation',weeks:[0,1,2,3]},{label:'Phase 2 — Loading',weeks:[4,5,6,7]},{label:'Phase 3 — Project',weeks:[8,9,10,11]}];
+  const dayNames=['M','T','W','T','F','S','S'];
+  phases.forEach(ph=>{
+    const h=document.createElement('div');
+    h.className='phase-header';
+    h.textContent=ph.label;
+    el.appendChild(h);
+    ph.weeks.forEach(wi=>{
+      const row=document.createElement('div');
+      row.className='week-row';
+      const wl=document.createElement('div');
+      wl.className='week-label';
+      wl.textContent=isDeload(wi)?'W'+(wi+1)+' ↓':'W'+(wi+1);
+      row.appendChild(wl);
+      const dots=document.createElement('div');
+      dots.className='day-dots';
+      for(let dow=0;dow<7;dow++){
+        const thisDi=wi*7+dow;
+        const sess=sessionForDay(thisDi);
+        const dot=document.createElement('div');
+        dot.className='dot '+sess.color;
+        if(thisDi===di) dot.classList.add('today-dot');
+        if(state.logs[thisDi]?.done) dot.classList.add('done-dot');
+        dot.title=sess.label;
+        dot.innerHTML=`<span>${dayNames[dow]}</span>`;
+        dots.appendChild(dot);
+      }
+      row.appendChild(dots);
+      el.appendChild(row);
+    });
+  });
+}
+
+function renderHangboard(){
+  const di=dayIndex();
+  const wi=Math.floor(di/7);
+  const ph=hbPhaseForWeek(wi);
+  state.totalSets=ph.sets;
+  const el=document.getElementById('hb-current');
+  el.innerHTML=`<div class="hb-phase-title">Current protocol — ${ph.weeks}</div>
+    <div class="hb-row"><span class="hb-key">Type</span><span class="hb-val">${ph.type}</span></div>
+    <div class="hb-row"><span class="hb-key">Edge</span><span class="hb-val">${ph.edge}</span></div>
+    <div class="hb-row"><span class="hb-key">Sets × reps</span><span class="hb-val">${ph.sets} × ${ph.reps}</span></div>
+    <div class="hb-row"><span class="hb-key">Work / rest</span><span class="hb-val">${ph.work}s on / ${ph.rest<10?ph.rest+'s':Math.floor(ph.rest/60)+' min'} off</span></div>
+    <div class="hb-row"><span class="hb-key">Load</span><span class="hb-val">${ph.load}</span></div>`;
+
+  renderSetDots();
+  document.getElementById('timer-display').textContent='0:0'+ph.work;
+  document.getElementById('timer-label').textContent='Ready — tap Start to begin hang';
+  document.getElementById('timer-start').textContent='Start hang';
+  document.getElementById('timer-start').className='tbtn primary';
+  document.getElementById('timer-start').onclick=startTimer;
+  state.timerSeconds=ph.work;
+  state.timerPhase='hang';
+  if(state.timerInterval){clearInterval(state.timerInterval);state.timerInterval=null;}
+}
+
+function renderSetDots(){
+  const el=document.getElementById('set-tracker');
+  el.innerHTML='';
+  for(let i=0;i<state.totalSets;i++){
+    const d=document.createElement('div');
+    d.className='set-dot'+(state.completedSets.includes(i)?' active':'');
+    d.textContent=i+1;
+    el.appendChild(d);
+  }
+}
+
+function getHbPhase(){
+  const di=dayIndex();const wi=Math.floor(di/7);return hbPhaseForWeek(wi);
+}
+
+function startTimer(){
+  if(state.timerRunning) return;
+  const ph=getHbPhase();
+  state.timerRunning=true;
+  document.getElementById('timer-start').className='tbtn danger';
+  document.getElementById('timer-start').textContent='Hanging...';
+  document.getElementById('timer-start').onclick=()=>{};
+  let secs=state.timerSeconds;
+  state.timerInterval=setInterval(()=>{
+    secs--;
+    state.timerSeconds=secs;
+    const m=Math.floor(secs/60),s=secs%60;
+    document.getElementById('timer-display').textContent=m+':'+(s<10?'0':'')+s;
+    if(secs<=0){
+      clearInterval(state.timerInterval);
+      state.timerRunning=false;
+      if(state.timerPhase==='hang'){
+        state.completedSets.push(state.currentSet);
+        state.currentSet++;
+        renderSetDots();
+        if(state.currentSet>=state.totalSets){
+          document.getElementById('timer-label').textContent='All sets complete! Great work.';
+          document.getElementById('timer-display').textContent='Done';
+          document.getElementById('timer-start').className='tbtn';
+          document.getElementById('timer-start').textContent='Reset';
+          document.getElementById('timer-start').onclick=resetTimer;
+          state.currentSet=0;state.completedSets=[];
+          return;
+        }
+        const restSecs=ph.rest<10?ph.rest:ph.rest;
+        state.timerSeconds=restSecs;
+        state.timerPhase='rest';
+        document.getElementById('timer-label').textContent='Rest — next set in...';
+        document.getElementById('timer-display').textContent=restSecs<60?'0:'+(restSecs<10?'0':'')+restSecs:Math.floor(restSecs/60)+':'+(restSecs%60<10?'0':'')+restSecs%60;
+        secs=restSecs;
+        state.timerInterval=setInterval(()=>{
+          secs--;
+          const m2=Math.floor(secs/60),s2=secs%60;
+          document.getElementById('timer-display').textContent=m2+':'+(s2<10?'0':'')+s2;
+          if(secs<=0){
+            clearInterval(state.timerInterval);
+            state.timerRunning=false;
+            state.timerPhase='hang';
+            state.timerSeconds=ph.work;
+            document.getElementById('timer-label').textContent=`Set ${state.currentSet+1} of ${state.totalSets} — tap Start`;
+            document.getElementById('timer-display').textContent='0:0'+ph.work;
+            document.getElementById('timer-start').className='tbtn primary';
+            document.getElementById('timer-start').textContent='Start hang';
+            document.getElementById('timer-start').onclick=startTimer;
+          }
+        },1000);
+      }
+    }
+  },1000);
+}
+
+function resetTimer(){
+  clearInterval(state.timerInterval);
+  state.timerRunning=false;
+  state.timerPhase='hang';
+  state.currentSet=0;
+  state.completedSets=[];
+  const ph=getHbPhase();
+  state.timerSeconds=ph.work;
+  document.getElementById('timer-display').textContent='0:0'+ph.work;
+  document.getElementById('timer-label').textContent='Ready — tap Start to begin hang';
+  document.getElementById('timer-start').className='tbtn primary';
+  document.getElementById('timer-start').textContent='Start hang';
+  document.getElementById('timer-start').onclick=startTimer;
+  renderSetDots();
+}
+
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  const entries=Object.entries(state.logs).filter(([,v])=>v.done).sort(([a],[b])=>b-a);
+  if(!entries.length){el.innerHTML='<div class="empty-state">No sessions logged yet.<br>Complete today\'s session to start your log.</div>';return;}
+  el.innerHTML=entries.map(([di,log])=>{
+    const d=new Date(START.getTime()+di*86400000);
+    return `<div class="log-entry"><div class="log-entry-header"><span class="log-entry-date">${formatDate(d)}</span><span class="log-entry-type">${log.type||''}</span></div>${log.notes?`<div class="log-entry-note">${log.notes}</div>`:'<div class="log-entry-note" style="opacity:.5">No notes</div>'}</div>`;
+  }).join('');
+}
+
+renderToday();
+</script>
+</body></html>
